@@ -1,1 +1,0 @@
-# KT-Project_KIRC
