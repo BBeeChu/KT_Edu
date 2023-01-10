@@ -2,19 +2,24 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
+#import pydot
+#from networkx.drawing.nx_pydot import graphviz_layout
 import matplotlib.pyplot as plt
 plt.rcParams['font.family'] = 'NanumGothic'
 
 
 class Graph_Viz():
 
-    def __init__(self, job, df):   
+    def __init__(self, job, df):
         self.job = job
-        #if self.job not in df.job:
-        #    print('해당 직업이 데이터베이스에 없습니다.')
 
     def set_edge_list(self, df):
-                
+        if self.job not in list(df['job']):
+            print('해당 직업이 데이터베이스에 없습니다.')
+            raise NotImplementedError
+        else:
+            pass
+
         # 직업_전공 연결 그래프 리스트 생성
         # 전공 노드 리스트: major_node_list
         # 직업과 전공 엣지 리스트: job_major_edge_list
@@ -25,14 +30,14 @@ class Graph_Viz():
         if len(major_node_list) != 0:
             for major in major_node_list:
                 job_major_edge_list.append((self.job, major))
-        
 
         # 전공과 과목을 연결 그래프 리스트 생성
         # 과목 노드 리스트: subject_category_list
         # 전공과 과목 엣지 리스트: major_subject_edge_list
         major_subject_edge_list = []
         for major in major_node_list:
-            subject_category_list = list(df[df.major == major]['subject_category'])
+            subject_category_list = list(
+                df[df.major == major]['subject_category'])
             subject_category_node_list = list(set(subject_category_list))
             if len(subject_category_node_list) != 0:
                 for subject in subject_category_node_list:
@@ -86,29 +91,35 @@ class Graph_Viz():
         category_details_node_list = list(set(category_details_node_list))
         return major_node_list, job_major_edge_list, subject_category_node_list, major_subject_edge_list, category_details_node_list, category_details_edge_list
 
-    def draw_graph(self, major_node_list, job_major_edge_list, subject_category_node_list, major_subject_edge_list, category_details_node_list, category_details_edge_list, graph_size=15, file_name='graph.png'):
-        plt.figure(figsize=(graph_size, graph_size))
+    def draw_graph(self, major_node_list, job_major_edge_list, subject_category_node_list, major_subject_edge_list, category_details_node_list, category_details_edge_list, horizontal=30, vertical = 30, file_name='graph.png'):
+        
         g = nx.Graph()
-        g.add_node(self.job, kind='직업', color='silver', size = 100)
-        g.add_nodes_from(major_node_list, kind = '전공', color = 'olivedrab')
+        g.add_node(self.job, kind='직업', color='silver')
+        g.add_nodes_from(major_node_list, kind='전공',
+                         color='darkkhaki', size=50)
         g.add_nodes_from(subject_category_node_list,
                          kind='교과 유형', color='sandybrown')
         g.add_nodes_from(category_details_node_list,
-                         kind='세부교과', color='lightskyblue')
-        g.add_edges_from(job_major_edge_list, color = 'cyan', weight=2, length=7)
+                         kind='세부교과', color='paleturquoise')
+        g.add_edges_from(job_major_edge_list, color='cyan', weight=2, length=40)
         g.add_edges_from(major_subject_edge_list,
-                         color='silver', weight=2, length=7)
+                         color='silver', weight=2, length=2)
         for n in category_details_edge_list:
-            g.add_edges_from(n, color='sandybrown', weight=2, length=7)
+            g.add_edges_from(n, color='sandybrown', weight=2, length=15)
         node_colors = nx.get_node_attributes(g, 'color').values()
         edge_colors = nx.get_edge_attributes(g, 'color').values()
-        node_sizes = dict(g.degree)
-        pos = nx.spring_layout(g)
+        node_size = g.number_of_nodes()
+        #pos = nx.spring_layout(g)
+        pos = nx.nx_agraph.graphviz_layout(g, prog="sfdp")
+        plt.figure(figsize=(g.number_of_nodes()*3.2, g.number_of_nodes()*3.2))
         nx.draw(g,
                 pos=pos,
                 with_labels=True,
                 font_family='NanumGothic',
                 edge_color=edge_colors,
                 node_color=node_colors,
-                node_size=[v * 100 for v in node_sizes.values()])
+                node_size = node_size*9000,
+                font_size = node_size*3,
+                width = node_size/10)
+        # node_size=[v * 100 for v in node_sizes.values()])
         plt.savefig('results/'+file_name)
